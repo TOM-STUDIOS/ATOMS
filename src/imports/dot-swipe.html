@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dot — Final Edition</title>
+<style>
+:root {
+  --bg:#07070f;--surface:#0f0f1e;--surface2:#16162c;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --accent:#7c6dfa;--accent2:#a89ffe;--accent-glow:rgba(124,109,250,0.35);
+  --ai:#00d4aa;--ai-glow:rgba(0,212,170,0.28);--warn:#fd79a8;
+  --text:#e4e4f2;--muted:#52526e;--muted2:#8888aa;
+  --ease-spring:cubic-bezier(0.34,1.56,0.64,1);--ease-out:cubic-bezier(0.16,1,0.3,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:400vh;overflow-x:hidden;}
+
+.page-section{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;}
+.s-home   {background:radial-gradient(ellipse at 50% 0%,rgba(124,109,250,.09) 0%,transparent 65%);}
+.s-about  {background:radial-gradient(ellipse at 50% 0%,rgba(0,212,170,.07) 0%,transparent 65%);}
+.s-work   {background:radial-gradient(ellipse at 50% 0%,rgba(9,132,227,.07) 0%,transparent 65%);}
+.s-contact{background:radial-gradient(ellipse at 50% 0%,rgba(225,112,85,.07) 0%,transparent 65%);}
+.section-tag{font-size:.67rem;letter-spacing:.22em;text-transform:uppercase;font-weight:600;margin-bottom:1.1rem;}
+.s-home .section-tag{color:#a89ffe;}.s-about .section-tag{color:#00d4aa;}.s-work .section-tag{color:#74b9ff;}.s-contact .section-tag{color:#fab1a0;}
+.section-title{font-size:clamp(2.4rem,6vw,4.8rem);font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:1rem;}
+.s-home .section-title{background:linear-gradient(135deg,#fff 35%,#a89ffe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.s-about .section-title{background:linear-gradient(135deg,#fff 35%,#00d4aa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.s-work .section-title{background:linear-gradient(135deg,#fff 35%,#74b9ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.s-contact .section-title{background:linear-gradient(135deg,#fff 35%,#fab1a0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.section-body{max-width:500px;color:#8888aa;font-size:1rem;line-height:1.75;}
+.chip-row{display:flex;flex-wrap:wrap;gap:.45rem;justify-content:center;margin-top:1.8rem;}
+.chip{padding:5px 13px;border-radius:100px;border:1px solid rgba(255,255,255,.12);font-size:.72rem;color:#8888aa;background:rgba(255,255,255,.03);}
+.chip b{color:#e4e4f2;}
+
+/* DOT WRAP */
+#dotWrap{position:fixed;bottom:28px;right:28px;z-index:9999;user-select:none;touch-action:none;}
+
+/* DOT CORE */
+#dotCore{width:17px;height:17px;border-radius:50%;background:#7c6dfa;cursor:pointer;position:relative;z-index:2;transition:background .45s ease,box-shadow .3s ease;}
+#dotCore::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1.5px solid #7c6dfa;opacity:0;animation:pulse 3s ease-in-out infinite;pointer-events:none;}
+#dotCore.no-pulse::after{animation:none;}
+@keyframes pulse{0%{transform:scale(1);opacity:.7;}65%{transform:scale(2.7);opacity:0;}100%{transform:scale(2.7);opacity:0;}}
+#dotCore.thinking::before{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid transparent;border-top-color:var(--ai);animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+#dotBadge{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:#fd79a8;border:1.5px solid var(--bg);display:none;z-index:3;animation:badgePop .35s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes badgePop{from{transform:scale(0);}to{transform:scale(1);}}
+
+#progressRing{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;pointer-events:none;}
+#progressCircle{fill:none;stroke:#a89ffe;stroke-width:2;stroke-linecap:round;stroke-dasharray:75.4;stroke-dashoffset:75.4;transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset .2s ease,stroke .45s ease;opacity:.55;}
+
+/* PANEL */
+#dotPanel{position:absolute;bottom:28px;right:0;width:342px;background:rgba(15,15,30,.97);backdrop-filter:blur(28px) saturate(180%);-webkit-backdrop-filter:blur(28px) saturate(180%);border:1px solid rgba(255,255,255,.12);border-radius:22px;overflow:hidden;opacity:0;transform:scale(.72) translateY(12px);transform-origin:bottom right;pointer-events:none;transition:opacity .3s ease,transform .42s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 40px 100px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.04);}
+#dotWrap.open #dotPanel{opacity:1;transform:scale(1) translateY(0);pointer-events:all;}
+#dotWrap.open #dotCore{box-shadow:0 0 0 8px rgba(124,109,250,.35);}
+#dotWrap.open #dotCore::after{animation:none;opacity:0;}
+
+/* HEADER */
+.p-header{padding:13px 15px 11px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:9px;}
+.p-logo{width:29px;height:29px;border-radius:9px;background:linear-gradient(135deg,#7c6dfa,#00d4aa);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0;}
+.p-brand{font-size:.84rem;font-weight:700;}
+.p-brand small{color:#00d4aa;font-size:.67rem;font-weight:500;margin-left:4px;}
+.p-badge{background:#fd79a8;color:#fff;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:100px;display:none;}
+.p-close{margin-left:auto;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.06);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8888aa;font-size:.82rem;transition:background .2s,color .2s;font-family:inherit;}
+.p-close:hover{background:rgba(255,255,255,.13);color:#e4e4f2;}
+
+/* TABS */
+.p-tabs{display:flex;padding:7px 11px 0;gap:3px;border-bottom:1px solid rgba(255,255,255,.07);overflow-x:auto;scrollbar-width:none;}
+.p-tabs::-webkit-scrollbar{display:none;}
+.tab-btn{flex-shrink:0;padding:5px 10px;border:none;background:transparent;color:#8888aa;font-size:.71rem;font-weight:600;font-family:inherit;cursor:pointer;border-radius:7px 7px 0 0;transition:color .18s;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
+.tab-btn:hover{color:#e4e4f2;}
+.tab-btn.active{color:#a89ffe;border-bottom-color:#7c6dfa;}
+.tab-pane{display:none;flex-direction:column;}
+.tab-pane.active{display:flex;}
+
+/* NAV */
+.nav-links{padding:7px 9px;display:flex;flex-direction:column;gap:2px;}
+.nav-link{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;color:#8888aa;font-size:.83rem;font-weight:500;transition:background .14s,color .14s;cursor:pointer;}
+.nav-link:hover{background:rgba(255,255,255,.05);color:#e4e4f2;}
+.nav-link.active{background:rgba(124,109,250,.13);color:#a89ffe;}
+.nav-icon{width:29px;height:29px;border-radius:7px;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0;}
+.nav-link.active .nav-icon{background:rgba(124,109,250,.18);}
+.nav-notif{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#fd79a8;flex-shrink:0;}
+
+/* RECENT */
+.pad-wrap{padding:10px 12px;}
+.sec-lbl{font-size:.63rem;letter-spacing:.14em;text-transform:uppercase;color:#52526e;font-weight:600;margin-bottom:6px;}
+.recent-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;cursor:pointer;color:#8888aa;font-size:.8rem;transition:background .14s,color .14s;}
+.recent-item:hover{background:rgba(255,255,255,.05);color:#e4e4f2;}
+.r-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;opacity:.65;}
+.r-time{margin-left:auto;font-size:.67rem;color:#52526e;}
+
+/* ALERTS */
+.notif-list{padding:7px 9px;display:flex;flex-direction:column;gap:2px;}
+.notif-item{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .14s;position:relative;}
+.notif-item:hover{background:rgba(255,255,255,.04);}
+.notif-item.unread::before{content:'';position:absolute;left:4px;top:50%;transform:translateY(-50%);width:4px;height:4px;border-radius:50%;background:#a89ffe;}
+.n-av{width:29px;height:29px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;flex-shrink:0;}
+.n-title{font-size:.78rem;color:#e4e4f2;font-weight:500;line-height:1.4;}
+.n-sub{font-size:.7rem;color:#8888aa;margin-top:2px;}
+.empty-state{padding:18px;text-align:center;color:#52526e;font-size:.78rem;}
+
+/* AI */
+#chatMessages{height:220px;overflow-y:auto;padding:10px 11px 4px;display:flex;flex-direction:column;gap:9px;scroll-behavior:smooth;}
+#chatMessages::-webkit-scrollbar{width:3px;}
+#chatMessages::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:10px;}
+.msg{display:flex;gap:7px;align-items:flex-start;animation:msgIn .28s cubic-bezier(0.16,1,0.3,1);}
+@keyframes msgIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.msg.user{flex-direction:row-reverse;}
+.msg-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0;margin-top:2px;}
+.msg.ai .msg-av{background:rgba(0,212,170,.14);color:#00d4aa;}
+.msg.user .msg-av{background:rgba(124,109,250,.14);color:#a89ffe;}
+.msg-bubble{max-width:82%;padding:7px 11px;border-radius:13px;font-size:.78rem;line-height:1.55;}
+.msg.ai .msg-bubble{background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.14);color:#e4e4f2;border-radius:3px 13px 13px 13px;}
+.msg.user .msg-bubble{background:rgba(124,109,250,.14);border:1px solid rgba(124,109,250,.2);color:#e4e4f2;border-radius:13px 3px 13px 13px;}
+.typing-dots{display:flex;gap:4px;padding:3px 1px;}
+.typing-dots span{width:5px;height:5px;border-radius:50%;background:#00d4aa;opacity:.5;animation:tb 1.2s ease-in-out infinite;}
+.typing-dots span:nth-child(2){animation-delay:.15s;}.typing-dots span:nth-child(3){animation-delay:.3s;}
+@keyframes tb{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+.quick-prompts{padding:5px 11px 7px;display:flex;flex-wrap:wrap;gap:4px;}
+.quick-btn{padding:4px 9px;border-radius:100px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#8888aa;font-size:.68rem;font-weight:500;cursor:pointer;transition:all .14s;font-family:inherit;white-space:nowrap;}
+.quick-btn:hover{background:rgba(0,212,170,.08);border-color:rgba(0,212,170,.25);color:#00d4aa;}
+.chat-row{padding:7px 9px 9px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:5px;align-items:flex-end;}
+.chat-input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:7px 11px;color:#e4e4f2;font-size:.78rem;font-family:inherit;outline:none;resize:none;min-height:34px;max-height:80px;transition:border-color .2s;line-height:1.4;}
+.chat-input::placeholder{color:#52526e;}
+.chat-input:focus{border-color:#00d4aa;}
+.chat-send{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#7c6dfa,#00d4aa);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;transition:opacity .18s;}
+.chat-send:hover{opacity:.84;}.chat-send:disabled{opacity:.35;cursor:not-allowed;}
+
+/* SUMMARY */
+.sum-wrap{padding:11px 12px;}
+.ai-badge{display:inline-flex;align-items:center;gap:4px;font-size:.65rem;color:#00d4aa;background:rgba(0,212,170,.1);padding:3px 8px;border-radius:100px;border:1px solid rgba(0,212,170,.2);font-weight:600;margin-bottom:8px;}
+.sum-sec{font-size:.75rem;font-weight:600;color:#8888aa;margin-bottom:7px;}
+.sum-box{background:rgba(0,212,170,.05);border:1px solid rgba(0,212,170,.12);border-radius:11px;padding:11px;font-size:.78rem;line-height:1.65;color:#e4e4f2;min-height:75px;}
+.sum-box.loading{color:#8888aa;}
+.sum-btn{margin-top:8px;width:100%;padding:7px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#8888aa;font-size:.74rem;font-family:inherit;cursor:pointer;transition:all .15s;}
+.sum-btn:hover{background:rgba(0,212,170,.07);border-color:rgba(0,212,170,.2);color:#00d4aa;}
+
+/* CUSTOMIZE */
+.cust-wrap{padding:8px 12px 12px;display:flex;flex-direction:column;gap:1px;overflow-y:auto;max-height:340px;scrollbar-width:thin;}
+.cust-wrap::-webkit-scrollbar{width:3px;}
+.cust-wrap::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:10px;}
+.grp-lbl{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#52526e;font-weight:600;padding:8px 2px 4px;}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;transition:background .14s;gap:10px;}
+.setting-row:hover{background:rgba(255,255,255,.03);}
+.s-left{display:flex;align-items:center;gap:9px;}
+.s-icon{width:28px;height:28px;border-radius:7px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+.s-label{font-size:.8rem;font-weight:500;color:#e4e4f2;}
+.s-desc{font-size:.68rem;color:#8888aa;margin-top:1px;}
+.toggle{position:relative;width:34px;height:19px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-sl{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:100px;cursor:pointer;transition:background .2s;}
+.toggle-sl::before{content:'';position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s cubic-bezier(0.34,1.56,0.64,1);}
+.toggle input:checked + .toggle-sl{background:#7c6dfa;}
+.toggle input:checked + .toggle-sl::before{transform:translateX(15px);}
+.color-row{display:flex;gap:7px;padding:6px 10px 4px;flex-wrap:wrap;}
+.c-swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;flex-shrink:0;}
+.c-swatch:hover{transform:scale(1.15);}
+.c-swatch.sel{border-color:#fff;transform:scale(1.15);}
+.slider-row{padding:3px 10px 10px;display:flex;align-items:center;gap:10px;}
+.sl-lbl{font-size:.7rem;color:#8888aa;white-space:nowrap;}
+input[type=range]{-webkit-appearance:none;flex:1;height:3px;background:rgba(255,255,255,.12);border-radius:10px;outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#7c6dfa;cursor:pointer;}
+.pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px 10px 10px;}
+.pos-btn{padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#8888aa;font-size:.72rem;cursor:pointer;transition:all .14s;font-family:inherit;text-align:center;}
+.pos-btn:hover{background:rgba(255,255,255,.05);color:#e4e4f2;}
+.pos-btn.active{background:rgba(124,109,250,.14);border-color:rgba(124,109,250,.3);color:#a89ffe;}
+.reset-btn{margin:8px 0 2px;padding:8px;border-radius:9px;border:1px solid rgba(253,121,168,.2);background:rgba(253,121,168,.07);color:#fd79a8;font-size:.75rem;font-family:inherit;cursor:pointer;transition:all .15s;width:100%;}
+.reset-btn:hover{background:rgba(253,121,168,.14);}
+
+/* FOOTER */
+.p-footer{padding:8px 9px 9px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:5px;}
+.foot-btn{flex:1;padding:7px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#8888aa;font-size:.74rem;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit;}
+.foot-btn:hover{background:rgba(255,255,255,.06);color:#e4e4f2;}
+.foot-btn.primary{background:linear-gradient(135deg,#7c6dfa,#00d4aa);border-color:transparent;color:#fff;}
+.foot-btn.primary:hover{opacity:.86;}
+
+#dotHint{position:absolute;right:calc(17px + 12px);bottom:50%;transform:translateY(50%);background:#16162c;border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:4px 9px;font-size:.69rem;color:#8888aa;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;}
+#dotWrap:not(.open):hover #dotHint{opacity:1;}
+#dotWrap.dragging #dotHint{opacity:0!important;}
+
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#16162c;border:1px solid rgba(255,255,255,.12);border-radius:100px;padding:8px 18px;font-size:.73rem;color:#8888aa;pointer-events:none;opacity:1;transition:opacity .6s;z-index:9998;}
+#toast span{color:#a89ffe;font-weight:600;}
+#toast.hide{opacity:0;}
+#snackbar{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#16162c;border:1px solid rgba(255,255,255,.15);border-radius:100px;padding:8px 18px;font-size:.73rem;color:#e4e4f2;pointer-events:none;opacity:0;transition:opacity .3s;z-index:10000;white-space:nowrap;}
+#snackbar.show{opacity:1;}
+
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;}#dotCore::after{animation:none;}}
+
+/* ── MODE SWITCHER ─────────────────────────────────────────── */
+.mode-switcher{display:flex;gap:0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:3px;margin:2px 0 6px;}
+.mode-opt{flex:1;padding:7px 10px;border:none;background:transparent;color:#8888aa;font-size:.74rem;font-weight:600;font-family:inherit;cursor:pointer;border-radius:9px;transition:all .22s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
+.mode-opt.active{background:rgba(124,109,250,.22);color:#a89ffe;box-shadow:0 2px 10px rgba(124,109,250,.2);}
+.mode-opt span{font-size:.9rem;}
+
+/* ── NAVBAR ─── */
+#siteNavbar{
+  position:fixed;top:0;left:0;right:0;z-index:9998;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:56px;
+  background:rgba(7,7,15,.82);
+  backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  transform:translateY(-100%);opacity:0;
+  transition:transform .42s cubic-bezier(0.34,1.56,0.64,1),opacity .3s ease;
+  pointer-events:none;
+}
+body.navbar-mode #siteNavbar{transform:translateY(0);opacity:1;pointer-events:all;}
+body.navbar-mode .page-section{padding-top:calc(4rem + 56px);}
+body.navbar-mode #dotWrap{opacity:0;pointer-events:none;}
+
+.nb-logo{font-size:.88rem;font-weight:800;color:#e4e4f2;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.nb-logo-dot{width:10px;height:10px;border-radius:50%;background:#7c6dfa;transition:background .45s ease;flex-shrink:0;}
+.nb-links{display:flex;align-items:center;gap:2px;}
+.nb-link{padding:6px 13px;border-radius:8px;font-size:.8rem;font-weight:500;color:#8888aa;cursor:pointer;border:none;background:transparent;font-family:inherit;transition:color .15s,background .15s;white-space:nowrap;position:relative;}
+.nb-link:hover{color:#e4e4f2;background:rgba(255,255,255,.05);}
+.nb-link.active{color:#a89ffe;}
+.nb-link.active::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:16px;height:2px;border-radius:4px;background:#7c6dfa;}
+.nb-notif-dot{width:5px;height:5px;border-radius:50%;background:#fd79a8;position:absolute;top:5px;right:7px;}
+.nb-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.nb-badge{background:rgba(253,121,168,.15);border:1px solid rgba(253,121,168,.3);color:#fd79a8;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:100px;display:none;}
+.nb-mode-btn{padding:5px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#8888aa;font-size:.72rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.nb-mode-btn:hover{background:rgba(124,109,250,.12);border-color:rgba(124,109,250,.3);color:#a89ffe;}
+
+#modeFlash{position:fixed;inset:0;background:#07070f;opacity:0;pointer-events:none;z-index:99999;transition:opacity .18s ease;}
+#modeFlash.flash{opacity:.5;}
+</style>
+</head>
+<body>
+
+<section class="page-section s-home" data-section="home" data-color="#7c6dfa" id="sec-home">
+  <p class="section-tag">Dot — Final Edition</p>
+  <h1 class="section-title">Everything in<br>one dot.</h1>
+  <p class="section-body">Navigation · AI · Notifications · Recent Pages · Summaries · Full Customization — all compressed into a single draggable dot.</p>
+  <div class="chip-row">
+    <div class="chip">🧲 <b>Drag anywhere</b></div>
+    <div class="chip">🤖 <b>AI inside</b></div>
+    <div class="chip">🔔 <b>Notifications</b></div>
+    <div class="chip">📄 <b>AI Summary</b></div>
+    <div class="chip">⚙️ <b>Customize dot</b></div>
+    <div class="chip">⌨️ <b>Press . to open</b></div>
+  </div>
+</section>
+
+<section class="page-section s-about" data-section="about" data-color="#00d4aa" id="sec-about">
+  <p class="section-tag">About</p>
+  <h1 class="section-title">Built for people<br>who hate clutter.</h1>
+  <p class="section-body">Traditional navbars steal 60–80px of screen space forever. Dot takes 17px in a corner. Open the ⚙ Dot tab and make it truly yours — colors, size, position, toggle any feature on or off.</p>
+</section>
+
+<section class="page-section s-work" data-section="work" data-color="#0984e3" id="sec-work">
+  <p class="section-tag">Work</p>
+  <h1 class="section-title">Ask the dot.<br>It knows.</h1>
+  <p class="section-body">Type "summarize this page" or "take me to contact" in the AI tab. The dot reads your page and understands your intent. Navigation that thinks with you.</p>
+</section>
+
+<section class="page-section s-contact" data-section="contact" data-color="#e17055" id="sec-contact">
+  <p class="section-tag">Contact</p>
+  <h1 class="section-title">Still here,<br>always ready.</h1>
+  <p class="section-body">You scrolled to the bottom. The dot followed, changed color, tracked your progress, and is one click away. That is the whole idea.</p>
+</section>
+
+<!-- ── SITE NAVBAR (navbar mode) ── -->
+<nav id="siteNavbar">
+  <div class="nb-logo">
+    <div class="nb-logo-dot" id="nbLogoDot"></div>
+    Dot
+  </div>
+  <div class="nb-links" id="nbLinks"></div>
+  <div class="nb-right">
+    <span class="nb-badge" id="nbBadge"></span>
+    <button class="nb-mode-btn" id="nbModeBtn">⬤ Dot mode</button>
+  </div>
+</nav>
+<div id="modeFlash"></div>
+
+<!-- ── DOT FINAL ── -->
+<div id="dotWrap">
+  <div id="dotHint">Drag · Click · Press <b>.</b></div>
+  <svg id="progressRing" viewBox="0 0 30 30"><circle cx="15" cy="15" r="12" id="progressCircle"/></svg>
+  <div id="dotCore" role="button" aria-label="Open Dot" tabindex="0" aria-expanded="false"></div>
+  <div id="dotBadge"></div>
+
+  <div id="dotPanel" role="dialog" aria-label="Dot Navigation">
+    <div class="p-header">
+      <div class="p-logo">✦</div>
+      <span class="p-brand">Dot <small>Final</small></span>
+      <span class="p-badge" id="pBadge"></span>
+      <button class="p-close" id="pClose">✕</button>
+    </div>
+
+    <div class="p-tabs">
+      <button class="tab-btn active" data-tab="nav">Nav</button>
+      <button class="tab-btn" data-tab="recent">Recent</button>
+      <button class="tab-btn" data-tab="alerts">Alerts <span id="alertCount" style="color:#fd79a8;font-size:.65rem;"></span></button>
+      <button class="tab-btn" data-tab="ai">Ask AI</button>
+      <button class="tab-btn" data-tab="summary">Summary</button>
+      <button class="tab-btn" data-tab="customize">⚙ Dot</button>
+    </div>
+
+    <!-- NAV -->
+    <div class="tab-pane active" id="tab-nav">
+      <div class="nav-links" id="navLinks"></div>
+      <div class="p-footer">
+        <button class="foot-btn">Log in</button>
+        <button class="foot-btn primary">Get started →</button>
+      </div>
+    </div>
+
+    <!-- RECENT -->
+    <div class="tab-pane" id="tab-recent">
+      <div class="pad-wrap">
+        <p class="sec-lbl">Recently visited</p>
+        <div id="recentList"></div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="tab-pane" id="tab-alerts">
+      <div class="notif-list" id="notifList"></div>
+    </div>
+
+    <!-- AI -->
+    <div class="tab-pane" id="tab-ai">
+      <div id="chatMessages"></div>
+      <div class="quick-prompts">
+        <button class="quick-btn" data-q="What is this website about?">What is this?</button>
+        <button class="quick-btn" data-q="Take me to the contact section">Go to contact</button>
+        <button class="quick-btn" data-q="Summarize this page for me">Summarize</button>
+        <button class="quick-btn" data-q="What sections are on this page?">All sections</button>
+      </div>
+      <div class="chat-row">
+        <textarea class="chat-input" id="chatInput" placeholder="Ask anything about this page…" rows="1"></textarea>
+        <button class="chat-send" id="chatSend">➤</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="tab-pane" id="tab-summary">
+      <div class="sum-wrap">
+        <div class="ai-badge">✦ AI Summary</div>
+        <p class="sum-sec" id="sumSecName">Current section</p>
+        <div class="sum-box" id="sumBox">Click "Generate" to get an AI summary of the current section.</div>
+        <button class="sum-btn" id="sumBtn">✦ Generate Summary</button>
+      </div>
+    </div>
+
+    <!-- CUSTOMIZE -->
+    <div class="tab-pane" id="tab-customize">
+      <div class="cust-wrap">
+
+        <p class="grp-lbl">Nav Mode</p>
+        <div class="mode-switcher">
+          <button class="mode-opt active" id="modeDot" onclick="setNavMode('dot')">
+            <span>⬤</span> Dot
+          </button>
+          <button class="mode-opt" id="modeNavbar" onclick="setNavMode('navbar')">
+            <span>☰</span> Navbar
+          </button>
+        </div>
+
+        <p class="grp-lbl">Features</p>
+
+        <div class="setting-row">
+          <div class="s-left"><div class="s-icon">🤖</div><div><div class="s-label">AI Assistant</div><div class="s-desc">Ask AI tab & smart answers</div></div></div>
+          <label class="toggle"><input type="checkbox" id="tog-ai" checked><span class="toggle-sl"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="s-left"><div class="s-icon">🔔</div><div><div class="s-label">Notifications</div><div class="s-desc">Alerts tab & badge on dot</div></div></div>
+          <label class="toggle"><input type="checkbox" id="tog-notif" checked><span class="toggle-sl"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="s-left"><div class="s-icon">🕐</div><div><div class="s-label">Recent Pages</div><div class="s-desc">Track visited sections</div></div></div>
+          <label class="toggle"><input type="checkbox" id="tog-recent" checked><span class="toggle-sl"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="s-left"><div class="s-icon">📄</div><div><div class="s-label">Page Summary</div><div class="s-desc">AI-powered section summaries</div></div></div>
+          <label class="toggle"><input type="checkbox" id="tog-summary" checked><span class="toggle-sl"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="s-left"><div class="s-icon">🎨</div><div><div class="s-label">Scroll Color</div><div class="s-desc">Dot changes color per section</div></div></div>
+          <label class="toggle"><input type="checkbox" id="tog-color" checked><span class="toggle-sl"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="s-left"><div class="s-icon">⭕</div><div><div class="s-label">Progress Ring</div><div class="s-desc">Scroll arc around the dot</div></div></div>
+          <label class="toggle"><input type="checkbox" id="tog-ring" checked><span class="toggle-sl"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="s-left"><div class="s-icon">💫</div><div><div class="s-label">Pulse Animation</div><div class="s-desc">Idle glow ring on dot</div></div></div>
+          <label class="toggle"><input type="checkbox" id="tog-pulse" checked><span class="toggle-sl"></span></label>
+        </div>
+
+        <p class="grp-lbl">Dot Color</p>
+        <div class="color-row" id="colorPicker">
+          <div class="c-swatch sel" data-color="#7c6dfa" style="background:#7c6dfa;"></div>
+          <div class="c-swatch" data-color="#00d4aa" style="background:#00d4aa;"></div>
+          <div class="c-swatch" data-color="#fd79a8" style="background:#fd79a8;"></div>
+          <div class="c-swatch" data-color="#fdcb6e" style="background:#fdcb6e;"></div>
+          <div class="c-swatch" data-color="#e17055" style="background:#e17055;"></div>
+          <div class="c-swatch" data-color="#74b9ff" style="background:#74b9ff;"></div>
+          <div class="c-swatch" data-color="#ffffff" style="background:#fff;"></div>
+          <div class="c-swatch" data-color="#55efc4" style="background:#55efc4;"></div>
+        </div>
+
+        <p class="grp-lbl">Dot Size</p>
+        <div class="slider-row">
+          <span class="sl-lbl">Small</span>
+          <input type="range" id="sizeSlider" min="10" max="28" value="17">
+          <span class="sl-lbl">Large</span>
+        </div>
+
+        <p class="grp-lbl">Snap Position</p>
+        <div class="pos-grid">
+          <button class="pos-btn" data-pos="top-left">↖ Top left</button>
+          <button class="pos-btn" data-pos="top-right">↗ Top right</button>
+          <button class="pos-btn" data-pos="bottom-left">↙ Bottom left</button>
+          <button class="pos-btn active" data-pos="bottom-right">↘ Bottom right</button>
+        </div>
+
+        <button class="reset-btn" id="resetBtn">↺ Reset all settings</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast">Press <span>.</span> to toggle Dot · <span>Swipe ←→</span> to change pages or panel tabs</div>
+<div id="snackbar"></div>
+
+<script>
+const NAV_ITEMS=[
+  {icon:'🏠',label:'Home',   section:'home',   color:'#7c6dfa'},
+  {icon:'💡',label:'About',  section:'about',  color:'#00d4aa'},
+  {icon:'💼',label:'Work',   section:'work',   color:'#0984e3'},
+  {icon:'✉️',label:'Contact',section:'contact',color:'#e17055',notif:true},
+  {icon:'⚙️',label:'Settings',section:null,    color:'#a89ffe'},
+];
+const SEC_COLORS={home:'#7c6dfa',about:'#00d4aa',work:'#0984e3',contact:'#e17055'};
+let recentData=[
+  {label:'Home', color:'#7c6dfa',time:'just now', section:'home'},
+  {label:'Work', color:'#0984e3',time:'3 min ago',section:'work'},
+  {label:'About',color:'#00d4aa',time:'9 min ago',section:'about'},
+];
+const NOTIFS=[
+  {av:'🛍️',bg:'rgba(225,112,85,.15)', title:'New order placed',    sub:'Order #4821 — $149.00',unread:true},
+  {av:'💬',bg:'rgba(0,212,170,.12)',   title:'New message from Alex',sub:'"Hey, loved the work!"',unread:true},
+  {av:'⚙️',bg:'rgba(162,155,254,.12)',title:'Settings updated',    sub:'2FA enabled on your account',unread:true},
+  {av:'✅',bg:'rgba(108,92,231,.1)',   title:'Deploy complete',     sub:'v3.0.0 is live',unread:false},
+];
+const SEC_COPY={
+  home:'This homepage introduces Dot Final Edition — a complete navigation system combining AI, notifications, recent history, summaries, and customization into a single draggable dot.',
+  about:'The About section explains the core idea: traditional navbars waste 60–80px. Dot replaces that with a 17px dot you can fully customize — colors, size, position, and feature toggles.',
+  work:'The Work section demonstrates AI intelligence inside Dot. Natural language commands like "summarize this" or "take me to contact" are understood and acted on instantly.',
+  contact:'The Contact section is at the very bottom. Yet the dot followed you here, changed color, tracked your scroll progress, and stayed one click away the entire time.',
+};
+const AI_CTX=`You are Dot, an AI inside a tiny navigation dot. Keep replies SHORT (2-4 sentences). Website sections: Home (Dot Final Edition intro), About (minimal nav philosophy), Work (AI demo), Contact (bottom/contact). For navigation say {"navigate":"sectionname"} then a brief message. Be friendly and concise.`;
+
+let cfg={ai:true,notif:true,recent:true,summary:true,scrollColor:true,ring:true,pulse:true,dotColor:'#7c6dfa',dotSize:17,position:'bottom-right'};
+let isOpen=false,didDrag=false,isTyping=false,activeSection='home',chatHist=[];
+
+const wrap=document.getElementById('dotWrap');
+const dot=document.getElementById('dotCore');
+const dotBadge=document.getElementById('dotBadge');
+const pBadge=document.getElementById('pBadge');
+const alertCount=document.getElementById('alertCount');
+const progressC=document.getElementById('progressCircle');
+const chatMsgs=document.getElementById('chatMessages');
+const chatInput=document.getElementById('chatInput');
+const chatSend=document.getElementById('chatSend');
+const sumBox=document.getElementById('sumBox');
+const sumBtn=document.getElementById('sumBtn');
+const sumSecName=document.getElementById('sumSecName');
+const snackbar=document.getElementById('snackbar');
+const toast=document.getElementById('toast');
+
+// OPEN/CLOSE
+function openPanel(){isOpen=true;wrap.classList.add('open');dot.setAttribute('aria-expanded','true');}
+function closePanel(){isOpen=false;wrap.classList.remove('open');dot.setAttribute('aria-expanded','false');}
+function toggle(){isOpen?closePanel():openPanel();}
+dot.addEventListener('click',()=>{if(!didDrag)toggle();});
+document.getElementById('pClose').addEventListener('click',closePanel);
+document.addEventListener('click',e=>{if(isOpen&&!wrap.contains(e.target))closePanel();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closePanel();
+  if(e.key==='.'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){e.preventDefault();toggle();}
+});
+dot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
+
+// TABS
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('tab-'+b.dataset.tab).classList.add('active');
+  });
+});
+
+// NAV
+function renderNav(){
+  const el=document.getElementById('navLinks');
+  el.innerHTML=NAV_ITEMS.map(n=>`
+    <div class="nav-link ${n.section===activeSection?'active':''}" data-section="${n.section||''}">
+      <div class="nav-icon">${n.icon}</div>${n.label}
+      ${n.notif&&cfg.notif?'<span class="nav-notif"></span>':''}
+    </div>`).join('');
+  el.querySelectorAll('.nav-link').forEach((el,i)=>{
+    el.addEventListener('click',()=>{
+      if(NAV_ITEMS[i].section){scrollTo(NAV_ITEMS[i].section);addRecent(NAV_ITEMS[i]);}
+      closePanel();
+    });
+  });
+}
+
+// RECENT
+function renderRecent(){
+  const el=document.getElementById('recentList');
+  if(!cfg.recent){el.innerHTML='<div class="empty-state">Recent pages is turned off.</div>';return;}
+  el.innerHTML=recentData.map(r=>`
+    <div class="recent-item" data-section="${r.section}">
+      <span class="r-dot" style="background:${r.color}"></span>${r.label}
+      <span class="r-time">${r.time}</span>
+    </div>`).join('');
+  el.querySelectorAll('.recent-item').forEach(el=>{
+    el.addEventListener('click',()=>{scrollTo(el.dataset.section);closePanel();});
+  });
+}
+function addRecent(item){
+  if(!cfg.recent)return;
+  const i=recentData.findIndex(r=>r.label===item.label);
+  if(i>-1)recentData.splice(i,1);
+  recentData.unshift({...item,time:'just now'});
+  if(recentData.length>5)recentData.pop();
+  renderRecent();
+}
+
+// ALERTS
+let unread=NOTIFS.filter(n=>n.unread).length;
+function renderAlerts(){
+  const el=document.getElementById('notifList');
+  if(!cfg.notif){
+    el.innerHTML='<div class="empty-state">Notifications are turned off.</div>';
+    dotBadge.style.display='none';pBadge.style.display='none';alertCount.textContent='';return;
+  }
+  el.innerHTML=NOTIFS.map(n=>`
+    <div class="notif-item ${n.unread?'unread':''}">
+      <div class="n-av" style="background:${n.bg}">${n.av}</div>
+      <div><div class="n-title">${n.title}</div><div class="n-sub">${n.sub}</div></div>
+    </div>`).join('');
+  dotBadge.style.display=unread>0?'block':'none';
+  pBadge.style.display=unread>0?'inline':'none';
+  pBadge.textContent=unread;
+  alertCount.textContent=unread>0?unread:'';
+  el.querySelectorAll('.notif-item').forEach((el,i)=>{
+    el.addEventListener('click',()=>{
+      el.classList.remove('unread');NOTIFS[i].unread=false;
+      unread=NOTIFS.filter(n=>n.unread).length;renderAlerts();
+    });
+  });
+}
+
+// SCROLL TO
+function scrollTo(sec){
+  const el=document.getElementById('sec-'+sec);
+  if(el)el.scrollIntoView({behavior:'smooth'});
+  activeSection=sec;renderNav();
+  sumSecName.textContent=sec.charAt(0).toUpperCase()+sec.slice(1)+' section';
+}
+
+// AI CHAT
+function initChat(){
+  chatMsgs.innerHTML='';
+  addMsg('ai','Hi! I\'m your AI navigator. Ask anything, or say <em>"go to contact"</em> to navigate.');
+}
+async function sendMsg(){
+  if(!cfg.ai){showSnack('AI Assistant is turned off in ⚙ Dot settings.');return;}
+  const text=chatInput.value.trim();
+  if(!text||isTyping)return;
+  chatInput.value='';chatInput.style.height='auto';
+  addMsg('user',text);chatHist.push({role:'user',content:text});
+  isTyping=true;chatSend.disabled=true;dot.classList.add('thinking');
+  const typEl=addTyping();
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,
+        messages:[{role:'user',content:AI_CTX+'\n\nUser: '+text+(chatHist.length>2?'\n\nRecent:\n'+chatHist.slice(-4,-1).map(m=>m.role+': '+m.content).join('\n'):'')}]})
+    });
+    const data=await res.json();
+    const reply=data.content?.map(c=>c.text||'').join('')||'Sorry, could not respond.';
+    typEl.remove();
+    const nm=reply.match(/\{"navigate"\s*:\s*"(\w+)"\}/);
+    if(nm){
+      const sec=nm[1];const clean=reply.replace(/\{"navigate"\s*:\s*"\w+"\}/,'').trim();
+      addMsg('ai',clean||'Navigating…');chatHist.push({role:'assistant',content:clean});
+      setTimeout(()=>{scrollTo(sec);closePanel();},800);
+    }else{addMsg('ai',reply);chatHist.push({role:'assistant',content:reply});}
+  }catch(e){typEl.remove();addMsg('ai','Connection issue — AI works when Claude API is connected. Navigation still works!');}
+  isTyping=false;chatSend.disabled=false;dot.classList.remove('thinking');
+}
+function addMsg(role,text){
+  const d=document.createElement('div');d.className='msg '+role;
+  d.innerHTML=`<div class="msg-av">${role==='ai'?'✦':'you'}</div><div class="msg-bubble">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>')}</div>`;
+  chatMsgs.appendChild(d);chatMsgs.scrollTop=chatMsgs.scrollHeight;return d;
+}
+function addTyping(){
+  const d=document.createElement('div');d.className='msg ai';
+  d.innerHTML=`<div class="msg-av">✦</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  chatMsgs.appendChild(d);chatMsgs.scrollTop=chatMsgs.scrollHeight;return d;
+}
+chatInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
+chatSend.addEventListener('click',sendMsg);
+chatInput.addEventListener('input',()=>{chatInput.style.height='auto';chatInput.style.height=Math.min(chatInput.scrollHeight,80)+'px';});
+document.querySelectorAll('.quick-btn').forEach(b=>b.addEventListener('click',()=>{chatInput.value=b.dataset.q;sendMsg();}));
+
+// SUMMARY
+async function genSummary(){
+  if(!cfg.summary){showSnack('Page Summary is turned off in ⚙ Dot settings.');return;}
+  const sec=activeSection;
+  sumSecName.textContent=sec.charAt(0).toUpperCase()+sec.slice(1)+' section';
+  sumBox.className='sum-box loading';sumBox.textContent='Generating AI summary…';
+  sumBtn.textContent='⏳ Generating…';sumBtn.disabled=true;dot.classList.add('thinking');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,
+        messages:[{role:'user',content:`Summarize this website section in 2-3 clear sentences.\nSection: "${sec}"\nContent: ${SEC_COPY[sec]}`}]})
+    });
+    const data=await res.json();
+    sumBox.className='sum-box';
+    sumBox.textContent=data.content?.map(c=>c.text||'').join('')||SEC_COPY[sec];
+  }catch(e){sumBox.className='sum-box';sumBox.textContent=SEC_COPY[sec];}
+  sumBtn.textContent='✦ Regenerate';sumBtn.disabled=false;dot.classList.remove('thinking');
+}
+sumBtn.addEventListener('click',genSummary);
+
+// CUSTOMIZE
+function applySettings(){
+  // show/hide tabs
+  ['ai','alerts','recent','summary'].forEach(t=>{
+    const key=t==='alerts'?'notif':t;
+    const btn=document.querySelector(`.tab-btn[data-tab="${t}"]`);
+    if(btn)btn.style.display=cfg[key]?'':'none';
+  });
+  // dot appearance
+  if(!cfg.scrollColor){dot.style.background=cfg.dotColor;progressC.style.stroke=cfg.dotColor;}
+  dot.style.width=cfg.dotSize+'px';dot.style.height=cfg.dotSize+'px';
+  document.getElementById('progressRing').style.opacity=cfg.ring?'1':'0';
+  dot.classList.toggle('no-pulse',!cfg.pulse);
+  renderAlerts();renderRecent();renderNav();
+  if(typeof renderTabDots==='function') setTimeout(renderTabDots,0);
+}
+
+// toggles
+[['tog-ai','ai','AI Assistant'],['tog-notif','notif','Notifications'],
+ ['tog-recent','recent','Recent Pages'],['tog-summary','summary','Page Summary'],
+ ['tog-color','scrollColor','Scroll Color'],['tog-ring','ring','Progress Ring'],
+ ['tog-pulse','pulse','Pulse Animation']].forEach(([id,key,label])=>{
+  document.getElementById(id).addEventListener('change',e=>{
+    cfg[key]=e.target.checked;applySettings();
+    showSnack(label+' '+(e.target.checked?'enabled':'disabled'));
+  });
+});
+
+// color swatches
+document.querySelectorAll('.c-swatch').forEach(sw=>{
+  sw.addEventListener('click',()=>{
+    document.querySelectorAll('.c-swatch').forEach(s=>s.classList.remove('sel'));
+    sw.classList.add('sel');cfg.dotColor=sw.dataset.color;cfg.scrollColor=false;
+    document.getElementById('tog-color').checked=false;
+    dot.style.background=cfg.dotColor;progressC.style.stroke=cfg.dotColor;
+    showSnack('Dot color updated');
+  });
+});
+
+// size
+document.getElementById('sizeSlider').addEventListener('input',e=>{
+  cfg.dotSize=parseInt(e.target.value);
+  dot.style.width=cfg.dotSize+'px';dot.style.height=cfg.dotSize+'px';
+});
+
+// position
+document.querySelectorAll('.pos-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.pos-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');cfg.position=btn.dataset.pos;
+    snapPos(cfg.position);showSnack('Position set to '+btn.textContent.trim());
+  });
+});
+
+function snapPos(pos){
+  const panel=document.getElementById('dotPanel');
+  wrap.style.transition='top .4s cubic-bezier(0.34,1.56,0.64,1),left .4s cubic-bezier(0.34,1.56,0.64,1),right .4s cubic-bezier(0.34,1.56,0.64,1),bottom .4s cubic-bezier(0.34,1.56,0.64,1)';
+  wrap.style.top='';wrap.style.left='';wrap.style.right='';wrap.style.bottom='';
+  const p='28px';
+  if(pos==='top-left')   {wrap.style.top=p;wrap.style.left=p;}
+  if(pos==='top-right')  {wrap.style.top=p;wrap.style.right=p;}
+  if(pos==='bottom-left'){wrap.style.bottom=p;wrap.style.left=p;}
+  if(pos==='bottom-right'){wrap.style.bottom=p;wrap.style.right=p;}
+  const isB=pos.startsWith('bottom'),isR=pos.endsWith('right');
+  panel.style.bottom=isB?'28px':'auto';panel.style.top=isB?'auto':'28px';
+  panel.style.right=isR?'0':'auto';panel.style.left=isR?'auto':'0';
+  panel.style.transformOrigin=(isB?'bottom':'top')+' '+(isR?'right':'left');
+  setTimeout(()=>wrap.style.transition='',500);
+}
+
+// reset
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  cfg={ai:true,notif:true,recent:true,summary:true,scrollColor:true,ring:true,pulse:true,dotColor:'#7c6dfa',dotSize:17,position:'bottom-right'};
+  ['tog-ai','tog-notif','tog-recent','tog-summary','tog-color','tog-ring','tog-pulse'].forEach(id=>{document.getElementById(id).checked=true;});
+  document.getElementById('sizeSlider').value=17;
+  document.querySelectorAll('.c-swatch').forEach(s=>s.classList.toggle('sel',s.dataset.color==='#7c6dfa'));
+  document.querySelectorAll('.pos-btn').forEach(b=>b.classList.toggle('active',b.dataset.pos==='bottom-right'));
+  snapPos('bottom-right');applySettings();
+  dot.style.background='#7c6dfa';progressC.style.stroke='#a89ffe';
+  showSnack('All settings reset to default');
+});
+
+// DRAG
+let isDrag=false,dSX,dSY,wSX,wSY;
+dot.addEventListener('mousedown',e=>{
+  isDrag=true;didDrag=false;
+  const r=wrap.getBoundingClientRect();dSX=e.clientX;dSY=e.clientY;wSX=r.left;wSY=r.top;
+  wrap.classList.add('dragging');dot.style.cursor='grabbing';
+});
+document.addEventListener('mousemove',e=>{
+  if(!isDrag)return;const dx=e.clientX-dSX,dy=e.clientY-dSY;
+  if(Math.abs(dx)>4||Math.abs(dy)>4)didDrag=true;
+  wrap.style.left=Math.max(8,Math.min(window.innerWidth-40,wSX+dx))+'px';
+  wrap.style.top=Math.max(8,Math.min(window.innerHeight-40,wSY+dy))+'px';
+  wrap.style.right='auto';wrap.style.bottom='auto';
+});
+document.addEventListener('mouseup',()=>{
+  if(!isDrag)return;isDrag=false;wrap.classList.remove('dragging');dot.style.cursor='pointer';
+});
+
+// SCROLL AWARE
+const sections=document.querySelectorAll('.page-section[data-section]');
+window.addEventListener('scroll',()=>{
+  const total=document.body.scrollHeight-window.innerHeight;
+  progressC.style.strokeDashoffset=75.4*(1-Math.min(1,window.scrollY/(total||1)));
+  let cur=sections[0];
+  sections.forEach(s=>{if(window.scrollY>=s.offsetTop-window.innerHeight/2)cur=s;});
+  const sec=cur.dataset.section;
+  if(sec!==activeSection){
+    activeSection=sec;
+    if(cfg.scrollColor){const c=SEC_COLORS[sec]||'#7c6dfa';dot.style.background=c;progressC.style.stroke=c;if(nbLogoDot)nbLogoDot.style.background=c;}
+    renderNav();sumSecName.textContent=sec.charAt(0).toUpperCase()+sec.slice(1)+' section';
+  }
+},{passive:true});
+
+// SNACKBAR
+let snackT;
+function showSnack(msg){
+  snackbar.textContent=msg;snackbar.classList.add('show');
+  clearTimeout(snackT);snackT=setTimeout(()=>snackbar.classList.remove('show'),2200);
+}
+
+// ── NAV MODE SWITCH ───────────────────────────────────────────────────────────
+let navMode = 'dot'; // 'dot' | 'navbar'
+const modeFlash = document.getElementById('modeFlash');
+const nbLogoDot = document.getElementById('nbLogoDot');
+const nbBadge   = document.getElementById('nbBadge');
+
+function renderNavbar(){
+  const el = document.getElementById('nbLinks');
+  el.innerHTML = NAV_ITEMS.filter(n=>n.section).map(n=>`
+    <button class="nb-link ${n.section===activeSection?'active':''}" data-section="${n.section}">
+      ${n.label}
+      ${n.notif&&cfg.notif?'<span class="nb-notif-dot"></span>':''}
+    </button>`).join('');
+  el.querySelectorAll('.nb-link').forEach(b=>{
+    b.addEventListener('click',()=>{ scrollTo(b.dataset.section); });
+  });
+  // sync badge
+  const u = NOTIFS.filter(n=>n.unread).length;
+  nbBadge.style.display = (u>0&&cfg.notif) ? 'inline' : 'none';
+  nbBadge.textContent = u;
+  // sync logo dot color
+  if(cfg.scrollColor){ const c=SEC_COLORS[activeSection]||'#7c6dfa'; nbLogoDot.style.background=c; }
+  else nbLogoDot.style.background=cfg.dotColor;
+}
+
+function setNavMode(mode){
+  if(navMode===mode) return;
+  navMode = mode;
+  // flash transition
+  modeFlash.classList.add('flash');
+  setTimeout(()=>{
+    if(mode==='navbar'){
+      document.body.classList.add('navbar-mode');
+      closePanel();
+      renderNavbar();
+    } else {
+      document.body.classList.remove('navbar-mode');
+    }
+    // update mode switcher buttons
+    document.getElementById('modeDot').classList.toggle('active', mode==='dot');
+    document.getElementById('modeNavbar').classList.toggle('active', mode==='navbar');
+    modeFlash.classList.remove('flash');
+    showSnack(mode==='navbar' ? 'Switched to Navbar mode' : 'Switched to Dot mode');
+  }, 180);
+}
+
+// navbar "switch to dot" button
+document.getElementById('nbModeBtn').addEventListener('click',()=> setNavMode('dot'));
+
+// keep navbar in sync when section changes
+const _origRenderNav = renderNav;
+renderNav = function(){
+  _origRenderNav();
+  if(navMode==='navbar') renderNavbar();
+};
+
+// keep navbar badge in sync
+const _origRenderAlerts = renderAlerts;
+renderAlerts = function(){
+  _origRenderAlerts();
+  if(navMode==='navbar') renderNavbar();
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderNav();renderRecent();renderAlerts();initChat();applySettings();
+setTimeout(()=>toast.classList.add('hide'),5500);
+
+// ── SWIPE NAVIGATION ──────────────────────────────────────────────────────────
+// Page sections — swipe left/right on the background to scroll between sections
+const PAGE_SECTIONS = ['home','about','work','contact'];
+let swipeSX=0, swipeSY=0, swipeActive=false;
+
+function getActiveIndex(){
+  return Math.max(0, PAGE_SECTIONS.indexOf(activeSection));
+}
+function goToSection(dir){
+  const idx = getActiveIndex();
+  const next = idx + dir;
+  if(next < 0 || next >= PAGE_SECTIONS.length) return;
+  const sec = PAGE_SECTIONS[next];
+  scrollTo(sec);
+  showSwipeHint(dir < 0 ? '← ' + sec.charAt(0).toUpperCase()+sec.slice(1) : sec.charAt(0).toUpperCase()+sec.slice(1) + ' →');
+}
+
+// swipe hint overlay
+const swipeHint = document.createElement('div');
+swipeHint.id = 'swipeHint';
+swipeHint.style.cssText = `
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.85);
+  background:rgba(15,15,30,.92);border:1px solid rgba(255,255,255,.13);
+  border-radius:14px;padding:10px 22px;font-size:.82rem;color:#a89ffe;
+  font-weight:600;pointer-events:none;opacity:0;
+  transition:opacity .25s,transform .25s;z-index:9997;white-space:nowrap;
+  backdrop-filter:blur(12px);letter-spacing:.03em;
+`;
+document.body.appendChild(swipeHint);
+let swipeHintTimer;
+function showSwipeHint(msg){
+  swipeHint.textContent = msg;
+  swipeHint.style.opacity = '1';
+  swipeHint.style.transform = 'translate(-50%,-50%) scale(1)';
+  clearTimeout(swipeHintTimer);
+  swipeHintTimer = setTimeout(()=>{
+    swipeHint.style.opacity='0';
+    swipeHint.style.transform='translate(-50%,-50%) scale(.85)';
+  }, 900);
+}
+
+// Page swipe on body (touch)
+document.addEventListener('touchstart', e => {
+  if(wrap.contains(e.target)) return; // ignore touches on the dot
+  const t = e.touches[0];
+  swipeSX = t.clientX; swipeSY = t.clientY; swipeActive = true;
+}, {passive:true});
+document.addEventListener('touchend', e => {
+  if(!swipeActive) return; swipeActive=false;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipeSX, dy = t.clientY - swipeSY;
+  if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 52){
+    goToSection(dx < 0 ? 1 : -1);
+  }
+}, {passive:true});
+
+// Page swipe (mouse — drag on background)
+let mouseSwipeSX=0, mouseSwipeActive=false;
+document.addEventListener('mousedown', e => {
+  if(wrap.contains(e.target) || ['INPUT','TEXTAREA','BUTTON'].includes(e.target.tagName)) return;
+  mouseSwipeSX = e.clientX; mouseSwipeActive = true;
+});
+document.addEventListener('mouseup', e => {
+  if(!mouseSwipeActive) return; mouseSwipeActive=false;
+  const dx = e.clientX - mouseSwipeSX;
+  if(Math.abs(dx) > 80){ goToSection(dx < 0 ? 1 : -1); }
+});
+
+// ── PANEL TAB SWIPE ───────────────────────────────────────────────────────────
+// Swipe left/right inside the dot panel to switch tabs
+const panel = document.getElementById('dotPanel');
+const TABS_ORDER = ['nav','recent','alerts','ai','summary','customize'];
+let panelSX=0, panelSY=0, panelSwipeActive=false;
+
+function getVisibleTabs(){
+  return TABS_ORDER.filter(t=>{
+    const btn = document.querySelector(`.tab-btn[data-tab="${t}"]`);
+    return btn && btn.style.display !== 'none';
+  });
+}
+function getActiveTab(){
+  const active = document.querySelector('.tab-btn.active');
+  return active ? active.dataset.tab : 'nav';
+}
+function switchTab(dir){
+  const visible = getVisibleTabs();
+  const cur = getActiveTab();
+  const idx = visible.indexOf(cur);
+  const nextIdx = idx + dir;
+  if(nextIdx < 0 || nextIdx >= visible.length) return;
+  const nextTab = visible[nextIdx];
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));
+  const btn = document.querySelector(`.tab-btn[data-tab="${nextTab}"]`);
+  if(btn) btn.classList.add('active');
+  const pane = document.getElementById('tab-'+nextTab);
+  if(pane) pane.classList.add('active');
+  // scroll tab into view
+  if(btn) btn.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+}
+
+panel.addEventListener('touchstart', e => {
+  // only capture if not in a scrollable child (chatMessages, cust-wrap)
+  const scrollable = e.target.closest('#chatMessages, .cust-wrap, .p-tabs');
+  if(scrollable) return;
+  const t = e.touches[0];
+  panelSX = t.clientX; panelSY = t.clientY; panelSwipeActive = true;
+}, {passive:true});
+panel.addEventListener('touchend', e => {
+  if(!panelSwipeActive) return; panelSwipeActive=false;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - panelSX, dy = t.clientY - panelSY;
+  if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40){
+    switchTab(dx < 0 ? 1 : -1);
+  }
+}, {passive:true});
+
+// Panel tab swipe (mouse, for desktop testing)
+panel.addEventListener('mousedown', e => {
+  const scrollable = e.target.closest('#chatMessages, .cust-wrap, .p-tabs, .chat-input, .chat-send, .sum-btn, .reset-btn, .toggle, .c-swatch, input, button, textarea');
+  if(scrollable) return;
+  panelSX = e.clientX; panelSY = e.clientY; panelSwipeActive = true;
+});
+panel.addEventListener('mouseup', e => {
+  if(!panelSwipeActive) return; panelSwipeActive=false;
+  const dx = e.clientX - panelSX, dy = e.clientY - panelSY;
+  if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40){
+    switchTab(dx < 0 ? 1 : -1);
+  }
+});
+
+// Swipe indicator dots for panel (shows which tab you're on)
+const tabDots = document.createElement('div');
+tabDots.id = 'tabDots';
+tabDots.style.cssText = `
+  display:flex;justify-content:center;align-items:center;gap:5px;
+  padding:5px 0 7px;border-top:1px solid rgba(255,255,255,.05);
+`;
+document.getElementById('dotPanel').appendChild(tabDots);
+
+function renderTabDots(){
+  const visible = getVisibleTabs();
+  const cur = getActiveTab();
+  tabDots.innerHTML = visible.map(t=>`
+    <div style="
+      width:${t===cur?'16px':'5px'};height:5px;border-radius:100px;
+      background:${t===cur?'#7c6dfa':'rgba(255,255,255,.18)'};
+      transition:width .25s cubic-bezier(0.34,1.56,0.64,1),background .2s;
+      cursor:pointer;flex-shrink:0;
+    " data-tab="${t}"></div>
+  `).join('');
+  tabDots.querySelectorAll('[data-tab]').forEach(d=>{
+    d.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));
+      const btn=document.querySelector(`.tab-btn[data-tab="${d.dataset.tab}"]`);
+      if(btn){btn.classList.add('active');btn.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});}
+      const pane=document.getElementById('tab-'+d.dataset.tab);
+      if(pane) pane.classList.add('active');
+      renderTabDots();
+    });
+  });
+}
+
+// Hook tab clicks to also re-render dots
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click', ()=> setTimeout(renderTabDots, 0));
+});
+renderTabDots();
+// Re-render dots after applySettings hides/shows tabs
+const origApply = applySettings;
+// wrap applySettings to also refresh dots
+const _origApply = window.applySettings;
+setTimeout(renderTabDots, 50);
+</script>
+</body>
+</html>
